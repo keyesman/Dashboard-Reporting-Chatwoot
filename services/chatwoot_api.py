@@ -170,8 +170,7 @@ def parse_last_note(messages):
     if not private_notes:
         return None
     content = private_notes[-1].get("content") or ""
-    content = content.replace("
-", " ").replace("\r", " ").strip()
+    content = content.replace("", " ").replace("\r", " ").strip()
     return content if content else None
 
 def parse_customer_info(conv):
