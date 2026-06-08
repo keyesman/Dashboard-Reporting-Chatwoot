@@ -35,12 +35,11 @@ def show_login_page():
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.title("🔐 Chatwoot Dashboard")
-        st.subheader("Login")
+        st.title("Dashboard Tickets L1")
         st.divider()
 
         with st.form("login_form"):
-            email    = st.text_input("Email", placeholder="admin@email.com")
+            email    = st.text_input("Email", placeholder="your@email.com")
             password = st.text_input("Password", type="password")
             submit   = st.form_submit_button("Login", use_container_width=True)
 

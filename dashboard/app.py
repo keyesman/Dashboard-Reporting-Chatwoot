@@ -46,7 +46,7 @@ render_sidebar(payload)
 # HOME CONTENT
 # =====================
 st.title("▪ Chatwoot Reporting Dashboard")
-st.write("Selamat datang, **" + payload.get("email", "") + "**!")
+st.write("Selamat datang, **" + payload.get("name", "") + "**!")
 st.divider()
 
 # Quick info cards
