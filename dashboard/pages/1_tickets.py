@@ -215,16 +215,11 @@ def update_escalation(ticket_id, note, category, updated_by):
 
 def seconds_to_hhmmss(seconds):
     """
-    Konversi durasi dalam detik ke format HH:MM:SS.
-    Dipakai untuk display FRT dan Resolution Time di tabel.
-
-    Args:
-        seconds (int/None): Durasi dalam detik
-
-    Returns:
-        str: Format HH:MM:SS atau "-" kalau None
+    Konversi detik ke format HH:MM:SS.
+    Handle None dan NaN (dari Pandas NULL) dengan return "-"
     """
-    if seconds is None:
+    import pandas as pd
+    if seconds is None or pd.isna(seconds):
         return "-"
     seconds = int(seconds)
     h = seconds // 3600
