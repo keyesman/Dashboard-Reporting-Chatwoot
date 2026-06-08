@@ -16,16 +16,6 @@ from db.connection import get_connection, release_connection
 from dashboard.auth import require_login, logout
 
 # =====================
-# PAGE CONFIG
-# Konfigurasi halaman — harus dipanggil pertama sebelum command Streamlit lain
-# =====================
-st.set_page_config(
-    page_title="Analytics — Chatwoot Dashboard",
-    page_icon="📈",
-    layout="wide"
-)
-
-# =====================
 # AUTH GUARD
 # Pastikan user sudah login — return payload JWT (user_id, email, role)
 # =====================

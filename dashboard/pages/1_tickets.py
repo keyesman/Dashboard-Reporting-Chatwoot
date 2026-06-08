@@ -15,16 +15,6 @@ from db.connection import get_connection, release_connection
 from dashboard.auth import require_login, logout
 
 # =====================
-# PAGE CONFIG
-# Konfigurasi halaman Streamlit — harus dipanggil pertama
-# =====================
-st.set_page_config(
-    page_title="Tickets — Chatwoot Dashboard",
-    page_icon="🎫",
-    layout="wide"
-)
-
-# =====================
 # AUTH GUARD
 # Pastikan user sudah login sebelum akses halaman ini
 # Return payload JWT berisi user_id, email, role

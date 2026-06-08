@@ -1,16 +1,35 @@
 # dashboard/auth.py
-# Login page & session guard untuk Streamlit
+# Login page & session guard dengan cookie persistence
 
 import streamlit as st
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from streamlit_cookies_manager import EncryptedCookieManager
 from services.auth_service import login, verify_token
+from config.settings import JWT_SECRET_KEY
+
+# =====================
+# COOKIE MANAGER
+# Enkripsi cookie pakai JWT_SECRET_KEY supaya tidak bisa di-tamper
+# Cookie persist di browser — tidak hilang saat refresh
+# =====================
+cookies = EncryptedCookieManager(
+    prefix="chatwoot_dashboard_",
+    password=JWT_SECRET_KEY
+)
+
+if not cookies.ready():
+    # Tunggu cookies selesai load
+    st.stop()
 
 def show_login_page():
-    """Tampilkan halaman login"""
-
+    """
+    Tampilkan halaman login.
+    set_page_config() tidak dipanggil di sini —
+    sudah dipanggil di app.py sebagai command pertama.
+    """
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.title("🔐 Chatwoot Dashboard")
@@ -28,6 +47,9 @@ def show_login_page():
             else:
                 token, error = login(email, password)
                 if token:
+                    # Simpan token ke cookie (persist saat refresh)
+                    cookies["token"] = token
+                    cookies.save()
                     st.session_state["token"] = token
                     st.rerun()
                 else:
@@ -36,32 +58,44 @@ def show_login_page():
 def require_login():
     """
     Guard: cek apakah user sudah login.
-    Return payload kalau sudah login, redirect ke login kalau belum.
+    Cek dari session_state dulu, kalau tidak ada cek dari cookie.
+    Return payload kalau valid, redirect ke login kalau tidak.
     """
+    # Cek session state dulu (lebih cepat)
     token = st.session_state.get("token")
+
+    # Kalau tidak ada di session, ambil dari cookie
+    if not token:
+        token = cookies.get("token")
+        if token:
+            # Restore ke session state
+            st.session_state["token"] = token
 
     if not token:
         show_login_page()
         st.stop()
 
+    # Verifikasi token valid dan belum expired
     payload = verify_token(token)
     if not payload:
+        # Token expired atau invalid — clear semua
         st.session_state.clear()
+        cookies["token"] = ""
+        cookies.save()
         show_login_page()
         st.stop()
 
     return payload
 
-def require_role(payload, allowed_roles):
-    """
-    Cek apakah user punya role yang diizinkan.
-    allowed_roles: list, contoh ["admin", "leader"]
-    """
-    if payload.get("role") not in allowed_roles:
-        st.error("Anda tidak memiliki akses ke halaman ini!")
-        st.stop()
-
 def logout():
-    """Logout — clear session"""
+    """
+    Logout — clear session state dan cookie.
+    User akan redirect ke login page.
+    """
+    # Hapus token dari cookie
+    cookies["token"] = ""
+    cookies.save()
+
+    # Clear semua session state
     st.session_state.clear()
     st.rerun()
