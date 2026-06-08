@@ -19,10 +19,8 @@ from services.auth_service import login, verify_token
 # =====================
 cookies = CookieController()
 
-def show_login_page():
-    from dashboard.components.theme import render_theme
-    render_theme()
 
+def show_login_page():
     """
     Tampilkan halaman login.
     CSS hide sidebar bawaan Streamlit ada di sini
@@ -61,6 +59,7 @@ def show_login_page():
                 else:
                     st.error(error or "Login gagal!")
 
+
 def require_login():
     """
     Guard: cek apakah user sudah login.
@@ -98,6 +97,7 @@ def require_login():
         st.stop()
 
     return payload
+
 
 def logout():
     """
