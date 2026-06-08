@@ -9,8 +9,12 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from dashboard.auth import logout
+from dashboard.components.theme import render_theme
 
 def render_sidebar(payload):
+    # Inject custom theme CSS — berlaku di semua pages
+    render_theme()
+
     """
     Render sidebar yang konsisten di semua halaman.
     Termasuk hide default Streamlit navigation supaya tidak double.
