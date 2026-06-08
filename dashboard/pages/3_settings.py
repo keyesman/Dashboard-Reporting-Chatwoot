@@ -10,8 +10,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from db.connection import get_connection, release_connection
-from dashboard.auth import require_login, logout
 from services.auth_service import hash_password
+from dashboard.auth import require_login
+from dashboard.components.sidebar import render_sidebar
 
 # =====================
 # AUTH GUARD
@@ -354,18 +355,8 @@ def reset_password(user_id, new_password):
 # SIDEBAR
 # Info user yang sedang login + tombol logout
 # =============================================================================
-with st.sidebar:
-    st.title("▪ Chatwoot Dashboard")
-    st.divider()
-
-    # Tampilkan email dan role user yang sedang login
-    st.write("👤 " + payload.get("email", ""))
-    st.write("🏷️ " + payload.get("role", "").upper())
-    st.divider()
-
-    # Tombol logout — clear session dan redirect ke login
-    if st.button("🚪 Logout", use_container_width=True):
-        logout()
+# Render sidebar yang konsisten dari shared component
+render_sidebar(payload)
 
 # =============================================================================
 # HEADER
