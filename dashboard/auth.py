@@ -1,6 +1,7 @@
 # =============================================================================
 # dashboard/auth.py
 # Login page & session guard dengan cookie persistence
+# Pakai streamlit-cookies-controller — compatible dengan Streamlit terbaru
 # =============================================================================
 
 import streamlit as st
@@ -8,28 +9,29 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import extra_streamlit_components as stx
+from streamlit_cookies_controller import CookieController
 from services.auth_service import login, verify_token
 
-def get_cookie_manager():
-    """
-    Inisialisasi CookieManager sebagai singleton.
-    Disimpan di session_state supaya tidak dibuat ulang setiap rerun
-    dan tidak menyebabkan duplicate key error.
-    """
-    # Cek apakah sudah ada di session state
-    if "cookie_manager" not in st.session_state:
-        st.session_state["cookie_manager"] = stx.CookieManager(
-            key="chatwoot_cookie_manager"
-        )
-    return st.session_state["cookie_manager"]
+# =====================
+# COOKIE CONTROLLER
+# Inisialisasi di level module — singleton otomatis
+# Tidak perlu @st.cache_resource atau session_state
+# =====================
+cookies = CookieController()
 
 def show_login_page():
     """
     Tampilkan halaman login.
-    set_page_config() tidak dipanggil di sini —
-    sudah dipanggil di app.py sebagai command pertama.
+    CSS hide sidebar bawaan Streamlit ada di sini
+    supaya menu tidak muncul saat belum login.
     """
+    # Sembunyikan default Streamlit navigation saat login page
+    st.markdown("""
+        <style>
+            [data-testid="stSidebarNav"] { display: none; }
+        </style>
+    """, unsafe_allow_html=True)
+
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.title("🔐 Chatwoot Dashboard")
@@ -50,13 +52,8 @@ def show_login_page():
                     # Simpan token ke session state
                     st.session_state["token"] = token
 
-                    # Simpan token ke cookie untuk persist saat refresh
-                    cookie_manager = get_cookie_manager()
-                    cookie_manager.set(
-                        "token",
-                        token,
-                        key="set_token"
-                    )
+                    # Simpan token ke cookie (persist saat refresh)
+                    cookies.set("token", token)
                     st.rerun()
                 else:
                     st.error(error or "Login gagal!")
@@ -65,23 +62,21 @@ def require_login():
     """
     Guard: cek apakah user sudah login.
     Urutan pengecekan:
-    1. Cek session_state (paling cepat)
+    1. Cek session_state (paling cepat, tidak perlu read cookie)
     2. Kalau tidak ada, cek cookie (persist saat refresh)
     3. Kalau keduanya tidak ada → tampilkan login page
 
     Returns:
         dict: JWT payload berisi user_id, email, role
     """
-    cookie_manager = get_cookie_manager()
-
     # 1. Cek session state dulu
     token = st.session_state.get("token")
 
     # 2. Kalau tidak ada di session, coba ambil dari cookie
     if not token:
-        token = cookie_manager.get("token")
+        token = cookies.get("token")
         if token:
-            # Restore ke session state
+            # Restore ke session state untuk akses lebih cepat
             st.session_state["token"] = token
 
     # 3. Kalau masih tidak ada → tampilkan login page
@@ -92,9 +87,9 @@ def require_login():
     # Verifikasi token masih valid dan belum expired
     payload = verify_token(token)
     if not payload:
-        # Token expired → clear semua dan minta login ulang
+        # Token expired → clear semua
         st.session_state.clear()
-        cookie_manager.delete("token", key="delete_expired_token")
+        cookies.remove("token")
         st.error("Sesi kamu sudah expired. Silakan login kembali.")
         show_login_page()
         st.stop()
@@ -107,9 +102,8 @@ def logout():
     User akan redirect ke login page otomatis.
     """
     # Hapus cookie token
-    cookie_manager = get_cookie_manager()
-    cookie_manager.delete("token", key="logout_delete_token")
+    cookies.remove("token")
 
-    # Clear semua session state termasuk cookie_manager
+    # Clear semua session state
     st.session_state.clear()
     st.rerun()
