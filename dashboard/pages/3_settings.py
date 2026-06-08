@@ -14,16 +14,6 @@ from dashboard.auth import require_login, logout
 from services.auth_service import hash_password
 
 # =====================
-# PAGE CONFIG
-# Konfigurasi halaman — harus dipanggil pertama
-# =====================
-st.set_page_config(
-    page_title="Settings — Chatwoot Dashboard",
-    page_icon="⚙️",
-    layout="wide"
-)
-
-# =====================
 # AUTH GUARD
 # Pastikan user sudah login — return payload JWT
 # =====================

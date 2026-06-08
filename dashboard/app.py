@@ -19,6 +19,20 @@ st.set_page_config(
 )
 
 # =====================
+# HIDE DEFAULT STREAMLIT NAVIGATION
+# Sembunyikan auto-generated navigation dari Streamlit
+# supaya tidak double dengan sidebar custom kita
+# =====================
+st.markdown("""
+    <style>
+        /* Sembunyikan default Streamlit page navigation di sidebar */
+        [data-testid="stSidebarNav"] {
+            display: none;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# =====================
 # AUTH GUARD
 # =====================
 payload = require_login()
@@ -36,16 +50,11 @@ with st.sidebar:
     st.divider()
 
     # Navigasi
-    # st.page_link("dashboard/pages/1_tickets.py",   label="🎫 Tickets",   icon="🎫")
-    # st.page_link("dashboard/pages/2_analytics.py", label="📈 Analytics", icon="📈")
-    st.write("**Navigation**")
-    st.write("- 🎫 Tickets")
-    st.write("- 📈 Analytics")
-
-    # Settings hanya untuk admin dan leader
+    st.page_link("app.py",         label="🏠 Home")
+    st.page_link("pages/1_tickets.py",    label="🎫 Tickets")
+    st.page_link("pages/2_analytics.py",  label="📈 Analytics")
     if payload.get("role") in ["admin", "leader"]:
-        # st.page_link("dashboard/pages/3_settings.py", label="⚙️ Settings", icon="⚙️")
-        st.write("- ⚙️ Settings")
+        st.page_link("pages/3_settings.py", label="⚙️ Settings")
 
     st.divider()
 
@@ -61,3 +70,12 @@ st.write("Selamat datang, **" + payload.get("email", "") + "**!")
 st.divider()
 
 st.info("Gunakan menu di sidebar untuk navigasi.")
+
+# Quick stats — 3 card ringkasan
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.info("🎫 **Tickets** Lihat dan filter semua ticket")
+with col2:
+    st.info("📈 **Analytics** Chart dan metrik performa tim")
+with col3:
+    st.info("⚙️ **Settings** Kelola shift, kategori, dan user")
