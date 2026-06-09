@@ -15,6 +15,7 @@ from datetime import date, timedelta
 from db.connection import get_connection, release_connection
 from dashboard.auth import require_login
 from dashboard.components.sidebar import render_sidebar
+import altair as alt
 
 # =====================
 # AUTH GUARD
@@ -71,19 +72,19 @@ def get_daily_volume(date_from, date_to):
         solved_rows = cursor.fetchall()
 
         # Gabungkan kedua hasil ke dalam DataFrame
-        df_masuk  = pd.DataFrame(masuk_rows,  columns=["date", "Ticket Masuk"])
+        df_masuk  = pd.DataFrame(masuk_rows,  columns=["date", "Ticket Created"])
         df_solved = pd.DataFrame(solved_rows, columns=["date", "Ticket Solved"])
 
         # Merge berdasarkan tanggal — fill 0 kalau tidak ada data di hari itu
         df = pd.merge(df_masuk, df_solved, on="date", how="outer").fillna(0)
         df = df.sort_values("date")
-        df["Ticket Masuk"]  = df["Ticket Masuk"].astype(int)
+        df["Ticket Masuk"]  = df["Ticket Created"].astype(int)
         df["Ticket Solved"] = df["Ticket Solved"].astype(int)
 
         return df
 
     except Exception as e:
-        st.error("Error mengambil volume data: " + str(e))
+        st.error("Error retrieving data volume: " + str(e))
         return pd.DataFrame()
 
     finally:
@@ -135,7 +136,7 @@ def get_avg_metrics(date_from, date_to):
         }
 
     except Exception as e:
-        st.error("Error menghitung metrics: " + str(e))
+        st.error("Error calculating metrics: " + str(e))
         return {}
 
     finally:
@@ -177,7 +178,7 @@ def get_breakdown_by(date_from, date_to, group_by):
         return pd.DataFrame(rows, columns=["Label", "Total"])
 
     except Exception as e:
-        st.error("Error mengambil breakdown data: " + str(e))
+        st.error("Error retrieving breakdown data: " + str(e))
         return pd.DataFrame()
 
     finally:
@@ -187,7 +188,7 @@ def get_breakdown_by(date_from, date_to, group_by):
 def get_daily_avg_frt(date_from, date_to):
     """
     Ambil AVG FRT per hari untuk ditampilkan sebagai trend line chart.
-    Hanya menghitung ticket yang punya FRT (tidak NULL).
+    Hanya menghitung ticket have FRT (tidak NULL).
 
     Args:
         date_from (str): Tanggal mulai YYYY-MM-DD
@@ -213,13 +214,13 @@ def get_daily_avg_frt(date_from, date_to):
         """, (date_from, date_to))
 
         rows = cursor.fetchall()
-        df   = pd.DataFrame(rows, columns=["date", "AVG FRT (menit)"])
+        df   = pd.DataFrame(rows, columns=["date", "AVG FRT (minute)"])
         # Convert ke float dulu (dari Decimal), lalu round
-        df["AVG FRT (menit)"] = df["AVG FRT (menit)"].astype(float).round(2)
+        df["AVG FRT (minute)"] = df["AVG FRT (minute)"].astype(float).round(2)
         return df
 
     except Exception as e:
-        st.error("Error mengambil AVG FRT harian: " + str(e))
+        st.error("Error fetching daily AVG FRT: " + str(e))
         return pd.DataFrame()
 
     finally:
@@ -264,13 +265,13 @@ st.divider()
 col1, col2, col3 = st.columns([2, 2, 4])
 with col1:
     # Default: 30 hari terakhir
-    date_from = st.date_input("Dari Tanggal", value=date.today() - timedelta(days=30))
+    date_from = st.date_input("From", value=date.today() - timedelta(days=30))
 with col2:
-    date_to = st.date_input("Sampai Tanggal", value=date.today())
+    date_to = st.date_input("To", value=date.today())
 with col3:
     st.write("")  # Spacer kosong
 
-apply = st.button("▪ Tampilkan Analytics", type="primary")
+apply = st.button("Show Analytics", type="primary")
 
 # Simpan tanggal ke session state supaya tidak reset saat interaksi UI
 if apply:
@@ -283,7 +284,7 @@ date_to_str   = st.session_state.get("analytics_to",   str(date_to))
 
 if "analytics_from" not in st.session_state and not apply:
     # Belum ada data — tampilkan pesan
-    st.info("Pilih periode dan klik 'Tampilkan Analytics'.")
+    st.info("Select the period and click 'Show Analytics'.")
     st.stop()
 
 # =============================================================================
@@ -310,19 +311,19 @@ if metrics:
         st.metric("Backlog (Open)", backlog)
 
     with col4:
-        # AVG FRT — hanya dari ticket yang punya FRT
+        # AVG FRT — Only from ticket have FRT
         st.metric(
             "AVG FRT",
             seconds_to_hhmmss(metrics["avg_frt"]),
-            help="Hanya dari " + str(metrics["tickets_with_frt"]) + " ticket yang punya FRT"
+            help="Only from " + str(metrics["tickets_with_frt"]) + " ticket have FRT"
         )
 
     with col5:
-        # AVG Resolution Time — hanya dari ticket resolved
+        # AVG Resolution Time — Only from ticket resolved
         st.metric(
             "AVG Resolution Time",
             seconds_to_hhmmss(metrics["avg_rt"]),
-            help="Hanya dari " + str(metrics["tickets_resolved"]) + " ticket resolved"
+            help="Only from " + str(metrics["tickets_resolved"]) + " ticket resolved"
         )
 
 st.divider()
@@ -333,19 +334,19 @@ st.divider()
 # Kalau Solved > Masuk → tim catch up backlog
 # Kalau Masuk > Solved → backlog numpuk
 # =============================================================================
-st.subheader("📈 Ticket Masuk vs Ticket Solved")
+st.subheader("📈 Total Tickets per Day")
 
 df_volume = get_daily_volume(date_from_str, date_to_str)
 if not df_volume.empty:
     # Set date sebagai index untuk chart
     df_chart = df_volume.set_index("date")
-    st.line_chart(df_chart[["Ticket Masuk", "Ticket Solved"]])
+    st.line_chart(df_chart[["Ticket Created"]])
 
     # Tampilkan juga tabel data di bawah chart
-    with st.expander("Lihat Data"):
-        st.dataframe(df_volume, use_container_width=True)
+    with st.expander("View Data"):
+        st.dataframe(df_volume[["date", "Ticket Created"]], use_container_width=True)
 else:
-    st.info("Tidak ada data volume untuk periode ini.")
+    st.info("There is no data for this period.")
 
 st.divider()
 
@@ -353,17 +354,17 @@ st.divider()
 # CHART 2 — AVG FRT Trend per Hari (Line Chart)
 # Menunjukkan tren kecepatan respons tim dari hari ke hari
 # =============================================================================
-st.subheader("⏱️ Trend AVG FRT per Hari")
+st.subheader("⏱️ AVG FRT per Day")
 
 df_frt = get_daily_avg_frt(date_from_str, date_to_str)
 if not df_frt.empty:
     df_frt_chart = df_frt.set_index("date")
-    st.line_chart(df_frt_chart["AVG FRT (menit)"])
+    st.line_chart(df_frt_chart["AVG FRT (minute)"])
 
-    with st.expander("Lihat Data"):
+    with st.expander("View Data"):
         st.dataframe(df_frt, use_container_width=True)
 else:
-    st.info("Tidak ada data FRT untuk periode ini.")
+    st.info("There is no data for this period.")
 
 st.divider()
 
@@ -372,7 +373,7 @@ st.divider()
 # User bisa pilih mau lihat breakdown per apa:
 # agent, service, type, atau priority
 # =============================================================================
-st.subheader("▪ Breakdown Ticket")
+st.subheader(" Breakdown Ticket")
 
 # Dropdown pilih kategori breakdown
 breakdown_options = {
@@ -394,11 +395,12 @@ df_breakdown = get_breakdown_by(
 )
 
 if not df_breakdown.empty:
-    # Set Label sebagai index untuk bar chart
-    df_bar = df_breakdown.set_index("Label")
-    st.bar_chart(df_bar["Total"])
+    chart = alt.Chart(df_breakdown).mark_bar().encode(
+        x=alt.X("Label:N", sort="-y", axis=alt.Axis(labelAngle=0)),
+        y=alt.Y("Total:Q"),
+        tooltip=["Label", "Total"]
+    )
+    st.altair_chart(chart, use_container_width=True)
 
-    with st.expander("Lihat Data"):
+    with st.expander("Viewt Data"):
         st.dataframe(df_breakdown, use_container_width=True)
-else:
-    st.info("Tidak ada data untuk breakdown " + sel_breakdown + ".")
