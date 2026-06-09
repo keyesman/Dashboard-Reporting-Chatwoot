@@ -214,8 +214,8 @@ def get_daily_avg_frt(date_from, date_to):
 
         rows = cursor.fetchall()
         df   = pd.DataFrame(rows, columns=["date", "AVG FRT (menit)"])
-        # Round ke 2 desimal supaya lebih clean di chart
-        df["AVG FRT (menit)"] = df["AVG FRT (menit)"].round(2)
+        # Convert ke float dulu (dari Decimal), lalu round
+        df["AVG FRT (menit)"] = df["AVG FRT (menit)"].astype(float).round(2)
         return df
 
     except Exception as e:

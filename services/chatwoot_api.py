@@ -25,12 +25,15 @@ HEADERS = {
 # =====================
 
 def get_conversations_by_status(status, date_from=None, date_to=None):
-    """Ambil semua conversation by status dengan pagination + filter tanggal"""
+    """
+    Ambil semua conversation by status dengan pagination + filter tanggal.
+    API Chatwoot mengembalikan data dari TERBARU ke TERLAMA.
+    Stop pagination hanya kalau SEMUA data di 1 page sudah lebih tua dari date_from.
+    """
     all_conversations = []
     page              = 1
-    stop_pagination   = False
 
-    while not stop_pagination:
+    while True:
         response = requests.get(
             CHATWOOT_BASE_URL + "/api/v1/accounts/" + str(CHATWOOT_ACCOUNT_ID) + "/conversations",
             headers=HEADERS,
@@ -48,20 +51,41 @@ def get_conversations_by_status(status, date_from=None, date_to=None):
         if not conversations:
             break
 
+        all_older = True  # Flag: semua data di page ini lebih tua dari date_from
+
         for conv in conversations:
             created_at = conv.get("created_at")
             if created_at:
                 conv_date = datetime.fromtimestamp(created_at).strftime("%Y-%m-%d")
-                if date_from and conv_date < date_from:
-                    stop_pagination = True
-                    continue
+
+                # Skip kalau lebih baru dari date_to
                 if date_to and conv_date > date_to:
+                    all_older = False
                     continue
-            all_conversations.append(conv)
+
+                # Dalam range → ambil, tandai ada data dalam range
+                if not date_from or conv_date >= date_from:
+                    all_older = False
+                    all_conversations.append(conv)
+
+                # Lebih tua dari date_from → skip (all_older tetap True)
+
+            else:
+                all_conversations.append(conv)
+
+        print("[INFO] Page " + str(page) + " status=" + status +
+              " | total terkumpul: " + str(len(all_conversations)))
+
+        # Stop hanya kalau SEMUA data di page ini lebih tua dari date_from
+        if date_from and all_older:
+            print("[INFO] Page " + str(page) + " semua data lebih tua dari " +
+                  date_from + " → stop pagination")
+            break
 
         page += 1
 
     return all_conversations
+
 
 def get_all_conversations(date_from=None, date_to=None):
     """Ambil semua conversation dari semua status dalam date range"""
