@@ -378,23 +378,21 @@ if shifts:
     # Render setiap shift sebagai row dengan tombol aksi
     for shift in shifts:
         shift_id, name, start, end, priority, is_active = shift
-        col1, col2, col3, col4, col5 = st.columns([3, 2, 2, 1, 2])
+        col1, col2, col3, col4= st.columns([3, 2, 2, 2])
 
         with col1:
             # Nama shift dengan indikator aktif/nonaktif
             status_icon = "○" if is_active else "●"
             st.write(status_icon + " **" + name + "**")
         with col2:
-            st.write("⏰ " + str(start) + " - " + str(end))
+            st.write(str(start) + " - " + str(end))
         with col3:
-            st.write("Priority: " + str(priority))
-        with col4:
             # Tombol toggle aktif/nonaktif
             toggle_label = "Nonaktifkan" if is_active else "Aktifkan"
             if st.button(toggle_label, key="toggle_shift_" + str(shift_id)):
                 if toggle_shift(shift_id, is_active):
                     st.rerun()
-        with col5:
+        with col4:
             # Tombol hapus shift
             if st.button("🗑️ Hapus", key="del_shift_" + str(shift_id)):
                 if delete_shift(shift_id):
