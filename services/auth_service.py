@@ -33,14 +33,15 @@ def verify_password(plain_password, hashed_password):
 # JWT TOKEN
 # =====================
 
-def generate_token(user_id, email, role):
+def generate_token(user_id, name, email, role):
     """Generate JWT token setelah login berhasil"""
     payload = {
-        "user_id"  : user_id,
-        "email"    : email,
-        "role"     : role,
-        "exp"      : datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS),
-        "iat"      : datetime.utcnow()
+        "user_id" : user_id,
+        "name"    : name,
+        "email"   : email,
+        "role"    : role,
+        "exp"     : datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS),
+        "iat"     : datetime.utcnow()
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
 
@@ -102,7 +103,7 @@ def login(email, password):
         conn.commit()
 
         # Generate token
-        token = generate_token(user_id, user_email, role)
+        token = generate_token(user_id, name, user_email, role)
 
         return token, None
 

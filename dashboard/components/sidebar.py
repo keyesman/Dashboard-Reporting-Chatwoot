@@ -36,12 +36,7 @@ def render_sidebar(payload):
 
     with st.sidebar:
         # Judul dashboard
-        st.title("▪ Chatwoot Dashboard")
-        st.divider()
-
-        # Info user yang sedang login
-        st.write("👤 " + payload.get("email", ""))
-        st.write("🏷️ " + payload.get("role", "").upper())
+        st.title("Chatwoot Dashboard")
         st.divider()
 
         # Navigation links — path relatif dari folder dashboard/
@@ -53,6 +48,11 @@ def render_sidebar(payload):
         if payload.get("role") in ["admin", "leader"]:
             st.page_link("pages/3_settings.py", label="⚙️ Settings")
 
+        st.divider()
+
+        # Info user yang sedang login
+        st.write("👤 " + payload.get("name", ""))
+        st.write("🏷️ " + payload.get("role", "").upper())
         st.divider()
 
         # Tombol logout — clear session dan redirect ke login
